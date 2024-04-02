@@ -36,7 +36,7 @@ if not os.path.exists(os.path.join(root, 'PKG-INFO')):
     fd.write("'''")
     fd.write(__doc__)
     fd.write("'''\n")
-    fd.write('version   = %r\n' % os.getenv('VERSION', '?').replace('-SNAPSHOT', '.dev-%d' % timestamp))
+    fd.write('version   = %r\n' % os.getenv('VERSION', '3.7.1').replace('-SNAPSHOT', '.dev-%d' % timestamp))
     fd.write('timestamp = %d\n' % timestamp)
     fd.close()
 # Load version
