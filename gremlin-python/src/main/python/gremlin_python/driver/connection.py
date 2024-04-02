@@ -26,7 +26,8 @@ __author__ = 'David M. Brown (davebshow@gmail.com)'
 class Connection:
 
     def __init__(self, url, traversal_source, protocol, transport_factory,
-                 executor, pool, headers=None, enable_user_agent_on_connect=True):
+                 executor, pool, headers=None, enable_user_agent_on_connect=True,
+                 result_queue_maxsize:int = 100):
         self._url = url
         self._headers = headers
         self._traversal_source = traversal_source
@@ -38,6 +39,7 @@ class Connection:
         self._results = {}
         self._inited = False
         self._enable_user_agent_on_connect = enable_user_agent_on_connect
+        self._result_queue_maxsize = result_queue_maxsize
         if self._enable_user_agent_on_connect:
             if self._headers is None:
                 self._headers = dict()
@@ -63,7 +65,7 @@ class Connection:
             uuid.UUID(request_id)  # Checks for proper UUID or else server will return an error.
         else:
             request_id = str(uuid.uuid4())
-        result_set = resultset.ResultSet(queue.Queue(), request_id)
+        result_set = resultset.ResultSet(queue.Queue(maxsize=self._result_queue_maxsize), request_id)
         self._results[request_id] = result_set
         # Create write task
         future = Future()

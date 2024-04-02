@@ -122,11 +122,11 @@ class GremlinServerWSProtocol(AbstractBaseProtocol):
             # Allow for auth handshake with multiple steps
             return self.data_received(data, results_dict)
         elif status_code == 204:
-            result_set.stream.put_nowait([])
+            result_set.stream.put([])
             del results_dict[request_id]
             return status_code
         elif status_code in [200, 206]:
-            result_set.stream.put_nowait(data)
+            result_set.stream.put(data)
             if status_code == 200:
                 result_set.status_attributes = message['status']['attributes']
                 del results_dict[request_id]
@@ -240,11 +240,11 @@ class GremlinServerHTTPProtocol(AbstractBaseProtocol):
             result_set.aggregate_to = aggregate_to
 
             if status_code == 204:
-                result_set.stream.put_nowait([])
+                result_set.stream.put([])
                 del results_dict[request_id]
                 return status_code
             elif status_code in [200, 206]:
-                result_set.stream.put_nowait(data)
+                result_set.stream.put(data)
                 if status_code == 200:
                     result_set.status_attributes = message['status']['attributes']
                     del results_dict[request_id]
