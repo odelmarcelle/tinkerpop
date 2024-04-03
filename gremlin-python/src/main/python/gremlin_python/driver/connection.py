@@ -16,18 +16,21 @@
 # under the License.
 import uuid
 import queue
+import time
+import logging
 from concurrent.futures import Future
 
-from gremlin_python.driver import resultset, useragent
+from gremlin_python.driver import resultset, useragent, request
 
 __author__ = 'David M. Brown (davebshow@gmail.com)'
 
+logger = logging.getLogger(__name__)
 
 class Connection:
 
     def __init__(self, url, traversal_source, protocol, transport_factory,
                  executor, pool, headers=None, enable_user_agent_on_connect=True,
-                 result_queue_maxsize:int = 100):
+                 result_queue_maxsize:int = 100, keep_alive_interval:int = 300):
         self._url = url
         self._headers = headers
         self._traversal_source = traversal_source
@@ -40,6 +43,7 @@ class Connection:
         self._inited = False
         self._enable_user_agent_on_connect = enable_user_agent_on_connect
         self._result_queue_maxsize = result_queue_maxsize
+        self._keep_alive_interval = keep_alive_interval
         if self._enable_user_agent_on_connect:
             if self._headers is None:
                 self._headers = dict()
@@ -87,12 +91,43 @@ class Connection:
         future_write.add_done_callback(cb)
         return future
 
+    def _append_keep_alive_request(self):
+        request_id = str(uuid.uuid4())
+        request_message = request.RequestMessage(
+            processor='', op='eval',
+            args={'gremlin': 'g.inject(0)', 'aliases': {'g': self._traversal_source}}
+        )
+        result_set = resultset.ResultSet(queue.Queue(maxsize=self._result_queue_maxsize), request_id)
+        self._results[request_id] = result_set
+        self._protocol.write(request_id, request_message)
+        return result_set
+        health_requests.append(result_set)
+
     def _receive(self):
+        idle_start = time.time()
+        keep_alive_requests = []
         try:
             while True:
                 data = self._transport.read()
                 status_code = self._protocol.data_received(data, self._results)
                 if status_code != 206:
-                    break
+                    # Due to the health checks, there may be more than one 200 response
+                    if status_code not in [200, 204]:
+                        logger.error(f"Error: Received status code: {status_code}\n{self._results=}")
+                    if not self._results:
+                        break
+                if (
+                    self._keep_alive_interval and
+                    idle_start + self._keep_alive_interval < time.time()
+                ):
+                    # Prevent Neptune from killing the idle connection by appending a
+                    # keep-alive request
+                    keep_alive_requests.append(self._append_keep_alive_request())
+                    idle_start = time.time()
         finally:
+            for result_set in keep_alive_requests:
+                try:
+                    result_set.stream.get_nowait()
+                except:
+                    logger.exception("Failed to get keep-alive result")
             self._pool.put_nowait(self)
