@@ -39,7 +39,7 @@ class DriverRemoteConnection(RemoteConnection):
                  username="", password="", kerberized_service='',
                  message_serializer=None, graphson_reader=None,
                  graphson_writer=None, headers=None, session=None,
-                 enable_user_agent_on_connect=True, **transport_kwargs):
+                 enable_user_agent_on_connect=True, connection_kwargs=None, **transport_kwargs):
         log.info("Creating DriverRemoteConnection with url '%s'", str(url))
         self.__url = url
         self.__traversal_source = traversal_source
@@ -57,6 +57,9 @@ class DriverRemoteConnection(RemoteConnection):
         self.__session = session
         self.__enable_user_agent_on_connect = enable_user_agent_on_connect
         self.__transport_kwargs = transport_kwargs
+        if connection_kwargs is None:
+            connection_kwargs = {}
+        self.__connection_kwargs = connection_kwargs
 
         # keeps a list of sessions that have been spawned from this DriverRemoteConnection
         # so that they can be closed if this parent session is closed.
@@ -78,6 +81,7 @@ class DriverRemoteConnection(RemoteConnection):
                                      headers=headers,
                                      session=session,
                                      enable_user_agent_on_connect=enable_user_agent_on_connect,
+                                     connection_kwargs=connection_kwargs,
                                      **transport_kwargs)
         self._url = self._client._url
         self._traversal_source = self._client._traversal_source

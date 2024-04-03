@@ -45,6 +45,7 @@ from gremlin_python import __version__
 version = __version__.version
 
 install_requires = [
+    'persist-queue',
     'nest_asyncio',
     'aiohttp>=3.8.0,<4.0.0',
     'aenum>=1.4.5,<4.0.0',

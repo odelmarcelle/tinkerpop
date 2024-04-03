@@ -44,7 +44,7 @@ class Client:
                  transport_factory=None, pool_size=None, max_workers=None,
                  message_serializer=None, username="", password="",
                  kerberized_service="", headers=None, session=None,
-                 enable_user_agent_on_connect=True, **transport_kwargs):
+                 enable_user_agent_on_connect=True, connection_kwargs=None, **transport_kwargs):
         log.info("Creating Client with url '%s'", url)
 
         # check via url that we are using http protocol
@@ -59,6 +59,9 @@ class Client:
             transport_kwargs["max_content_length"] = 10 * 1024 * 1024
         if message_serializer is None:
             message_serializer = serializer.GraphBinarySerializersV1()
+        if connection_kwargs is None:
+            connection_kwargs = {}
+        self._connection_kwargs = connection_kwargs
 
         self._message_serializer = message_serializer
         self._username = username
@@ -163,6 +166,7 @@ class Client:
         return connection.Connection(
             self._url, self._traversal_source, protocol,
             self._transport_factory, self._executor, self._pool,
+            **self._connection_kwargs,
             headers=self._headers, enable_user_agent_on_connect=self._enable_user_agent_on_connect)
 
     def submit(self, message, bindings=None, request_options=None):

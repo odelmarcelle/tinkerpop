@@ -77,9 +77,13 @@ class ResultSet:
     def one(self):
         while not self.done.done():
             if not self.stream.empty():
-                return self.stream.get_nowait()
+                r = self.stream.get_nowait()
+                self.stream.task_done()
+                return r
         if not self.stream.empty():
-            return self.stream.get_nowait()
+            r = self.stream.get_nowait()
+            self.stream.task_done()
+            return r
         return self.done.result()
 
     def all(self):
@@ -94,6 +98,7 @@ class ResultSet:
                 results = []
                 while not self.stream.empty():
                     results += self.stream.get_nowait()
+                    self.stream.task_done()
                 future.set_result(results)
 
         self.done.add_done_callback(cb)
