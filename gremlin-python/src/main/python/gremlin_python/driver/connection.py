@@ -16,6 +16,7 @@
 # under the License.
 import uuid
 import queue
+import tempfile
 from concurrent.futures import Future
 
 import persistqueue
@@ -68,7 +69,7 @@ class Connection:
         else:
             request_id = str(uuid.uuid4())
         if self._use_disk_based_queue:
-            stream = persistqueue.Queue(f"queues/{request_id}", autosave=True)
+            stream = persistqueue.Queue(f"{tempfile.gettempdir()}/queues/{request_id}", autosave=True)
         else:
             stream = queue.Queue()
         result_set = resultset.ResultSet(stream, request_id)
