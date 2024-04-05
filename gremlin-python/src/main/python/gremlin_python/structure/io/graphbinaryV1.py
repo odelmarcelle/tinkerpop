@@ -338,9 +338,14 @@ class DateIO(_GraphBinaryTypeIO):
 
     @classmethod
     def objectify(cls, buff, reader, nullable=True):
-        return cls.is_null(buff, reader,
-                           lambda b, r: datetime.datetime.utcfromtimestamp(int64_unpack(b.read(8)) / 1000.0),
-                           nullable)
+        if nullable and buff.read(1)[0] == 0x01:
+            return None
+        else:
+            timestamp = int64_unpack(buff.read(8)) / 1000.0
+            if timestamp < 0:
+                return datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds=timestamp)
+            else:
+                return datetime.datetime.utcfromtimestamp(timestamp)
 
 
 # Based on current implementation, this class must always be declared before FloatIO.
